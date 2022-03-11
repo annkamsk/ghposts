@@ -131,7 +131,7 @@ class PostContent {
 }
 
 function get_request($url) {
-    $token = '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';
+    $token = '';
     $args = array(
         'headers' => array(
             'Authorization' => 'Bearer ' . $token,
