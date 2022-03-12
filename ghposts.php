@@ -5,16 +5,24 @@ Plugin Name: GHPosts
 */
 require_once( __DIR__ . '/includes/post-content.php');
 require_once( __DIR__ . '/includes/token.php');
+require_once( __DIR__ . '/includes/token-list.php');
 
 
-function get_request($url) {
-    $token = get_token();
+function get_request($url, $token_id) {
+    $token_obj = get_token($token_id);
     $args = array(
         'headers' => array(
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer ' . $token_obj->token,
         ),
     ); 
-    return json_decode(wp_remote_retrieve_body(wp_remote_get($url, $args)));
+    $response = wp_remote_get($url, $args);
+    update_token_status($token_id, $response);
+
+    $status = wp_remote_retrieve_response_code($response);
+    if ($status < 200 || $status >= 300) {
+        return null;
+    }
+    return json_decode(wp_remote_retrieve_body($response));
 }
 
 function insert_or_update($postContent) {
@@ -40,8 +48,11 @@ function insert_or_update($postContent) {
     
 }
 
-function get_post_content($url) {
-    $content = get_request($url);
+function get_post_content($url, $token_id) {
+    $content = get_request($url, $token_id);
+    if (!$content) {
+        return;
+    }
     $decoded = base64_decode($content -> {'content'});
     $postContent = new PostContent($decoded);
     echo "Downloaded " . $postContent->getTitle();
@@ -57,28 +68,26 @@ function ghposts_menu() {
 function ghposts_options() {
     echo '<div class="wrap">';
     echo '<h2>GH Posts</h2>';
+    create_token_table();
 
-    admin_save_token();
+    display_admin_save_token();
+    display_token_list();
 
     if (isset($_POST['ghposts_token']) && check_admin_referer('ghposts_token_clicked')) {
-        create_token_table();
-        insert_token($_POST['ghposts_token']);
+        insert_token($_POST['ghposts_token'], $_POST['ghposts_url']);
     }
 
     if (isset($_POST['ghposts_run']) && check_admin_referer('ghposts_run_clicked')) {
-        $body = get_request('https://api.github.com/repos/annkamsk/polishlyrics/git/trees/master'); 
-        $tree = $body->{'tree'};
-        foreach ($tree as $key => $file) {
-            get_post_content($file->{'url'});
+        $token_id = $_POST['ghposts_token_id'];
+        $token_obj = get_token($token_id);
+
+        $body = get_request($token_obj->url, $token_id);   
+        if ($body) {
+            $tree = $body->{'tree'};
+            foreach ($tree as $key => $file) {
+                get_post_content($file->{'url'}, $token_id);
+            }
         }
     }
-?>
-    <h4>Sync posts</h4>
-    <form action="options-general.php?page=ghposts" method="post">
-        <?php wp_nonce_field('ghposts_run_clicked'); ?>
-        <input type="hidden" name="ghposts_run" value="true">
-        <?php submit_button('Run'); ?>
-    </form>
-<?php
     echo '</div>';
 }
