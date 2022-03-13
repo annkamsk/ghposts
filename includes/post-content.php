@@ -1,5 +1,34 @@
 <?php
 
+class PostMetadata {
+    public function __construct($data) {
+        $this->title = $data["title"] ?? "";
+        $this->from = $data["from"] ?? "";
+        $this->orig_title = $data["orig_title"] ?? "";
+        $this->lyrics_by = $data["lyrics_by"] ?? "";
+        $this->translate_by = $data["translate_by"] ?? "";
+        $this->source_lang = $data["source_lang"] ?? "";
+        $this->target_lang = $data["target_lang"] ?? "";
+    }
+
+    public function toHtml() {
+        return "
+            <!-- wp:paragraph -->
+            <p>
+                <em>Skąd: $this->from</em><br>
+                <em>Tytuł: $this->orig_title</em><br>
+                <em>Słowa: $this->lyrics_by</em><br>
+                <em>Polskie słowa: $this->translate_by</em><br>
+            </p>
+            <!-- /wp:paragraph -->
+        ";
+    }
+
+    public function getTitle() {
+        return ($this->from ? $this->from . ' – ' : '') . "$this->title ($this->orig_title)";
+    }
+}
+
 class PostContent {
     public $content;
     public $lines;
@@ -7,43 +36,11 @@ class PostContent {
 
     private $character_rgx = '/##### (.+)/';
 
-    private $metadata_rgx = array(
-        'title' => '/# (.+)/',
-        'from' => '/_From_: _(.+)_/',
-        'orig_title' => '/_Title_: _(.+)_/',
-        'author' => '/_By_: _(.+)_/',
-    );
-
-    public function __construct($raw_text) {
+    public function __construct(string $raw_text, PostMetadata $metadata) {
         $this->content = array();
         $this->lines = explode("\n", $raw_text);
-        $this->metadata = array();
-        $this->parseMetadata();
+        $this->metadata = $metadata;
         $this->parse();
-    }
-
-    function getTitle() {
-        $post_title = $this->metadata['from'] ? $this->metadata['from'] . ' – ' : '';
-        $post_title .= $this->metadata['title'];
-        return $this->metadata['orig_title'] ? $post_title . ' (' . $this->metadata['orig_title'] . ')' : $post_title;
-    }
-
-    function parseMetadata() {
-        $max_row = 0;
-        foreach ($this->lines as $key=>$line) {
-            foreach($this->metadata_rgx as $name=>$rgx) {
-                $matches = array();
-                if (preg_match($rgx, $line, $matches)) {
-                    $this->metadata[$name] = $matches[1];
-                    $max_row = max($key, $max_row);
-                    break;
-                }
-            }
-            if ($key > 3) {
-                break;
-            }
-        }
-        $this->lines = array_slice($this->lines, $max_row + 1);
     }
 
     function find_character($line) {
@@ -82,24 +79,8 @@ class PostContent {
         }
     }
 
-    function metadataToHtml() {
-        $from = $this->metadata["from"];
-        $by = $this->metadata["author"];
-        $orig_title = $this->metadata["orig_title"];
-        return "
-            <!-- wp:paragraph -->
-            <p>
-                <em>Skąd: $from</em><br>
-                <em>Tytuł: $orig_title</em><br>
-                <em>Słowa: $by</em><br>
-                <em>Polskie słowa: Anna Kramarska</em><br>
-            </p>
-            <!-- /wp:paragraph -->
-        ";
-    }
-
     public function getHtml() {
-        $metadataHtml = $this->metadataToHtml();
+        $metadataHtml = $this->metadata->toHtml();
         $column = "";
         foreach ($this->content as $el) {
             $column .= "<!-- wp:paragraph --><p>" . implode("<br>", $el) . "</p><!-- /wp:paragraph -->";

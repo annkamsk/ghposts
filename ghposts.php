@@ -6,6 +6,7 @@ Plugin Name: GHPosts
 require_once( __DIR__ . '/includes/post-content.php');
 require_once( __DIR__ . '/includes/token.php');
 require_once( __DIR__ . '/includes/token-list.php');
+require_once( __DIR__ . '/includes/front-matter-parser.php');
 
 
 function get_request($url, $token_id) {
@@ -26,7 +27,7 @@ function get_request($url, $token_id) {
 }
 
 function insert_or_update($postContent) {
-    $post = get_page_by_title($postContent->getTitle(), 'OBJECT', 'post');
+    $post = get_page_by_title($postContent->metadata->getTitle(), 'OBJECT', 'post');
     
     if ($post) {
         if (empty(array_filter(get_the_category($post->{'ID'}), function ($v, $k) {
@@ -34,7 +35,7 @@ function insert_or_update($postContent) {
         }, ARRAY_FILTER_USE_BOTH))) {
             $postData = array(
                 'ID' => $post->{'ID'},
-                'post_title'   => $postContent->getTitle(),
+                'post_title'   => $postContent->metadata->getTitle(),
                 'post_content' => $postContent->getHtml(),
             );
             wp_update_post( $postData );
@@ -42,7 +43,7 @@ function insert_or_update($postContent) {
     } else {
         wp_insert_post(array(
             'post_content' => $postContent->getHtml(),
-            'post_title' => $postContent->getTitle()
+            'post_title' => $postContent->metadata->getTitle()
         ));
     }
     
@@ -54,8 +55,10 @@ function get_post_content($url, $token_id) {
         return;
     }
     $decoded = base64_decode($content -> {'content'});
-    $postContent = new PostContent($decoded);
-    echo "Downloaded " . $postContent->getTitle();
+    list($metadata, $body) = FrontMatterParser::parse($decoded);
+    $postContent = new PostContent($body, $metadata);
+    
+    echo "Downloaded " . $postContent->metadata->getTitle();
     insert_or_update($postContent);
 }
 
