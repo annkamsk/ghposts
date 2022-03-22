@@ -1,5 +1,8 @@
 <?php
 
+require_once( __DIR__ . '/languages.php');
+
+
 class PostMetadata {
     public function __construct($data) {
         $this->title = $data["title"] ?? "";
@@ -15,10 +18,10 @@ class PostMetadata {
         return "
             <!-- wp:paragraph -->
             <p>
-                <em>Skąd: $this->from</em><br>
-                <em>Tytuł: $this->orig_title</em><br>
-                <em>Słowa: $this->lyrics_by</em><br>
-                <em>Polskie słowa: $this->translate_by</em><br>
+                <em>".pl__("From").": $this->from</em><br>
+                <em>".pl__("Original title").": $this->orig_title</em><br>
+                <em>".pl__("Lyrics by").": $this->lyrics_by</em><br>
+                <em>".pl__("Translated by").": $this->translate_by</em><br>
             </p>
             <!-- /wp:paragraph -->
         ";

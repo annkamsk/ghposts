@@ -7,6 +7,7 @@ require_once( __DIR__ . '/includes/post-content.php');
 require_once( __DIR__ . '/includes/token.php');
 require_once( __DIR__ . '/includes/token-list.php');
 require_once( __DIR__ . '/includes/front-matter-parser.php');
+require_once( __DIR__ . '/includes/languages.php');
 
 
 function get_request($url, $token_id) {
@@ -27,24 +28,34 @@ function get_request($url, $token_id) {
 }
 
 function insert_or_update($postContent) {
-    $post = get_page_by_title($postContent->metadata->getTitle(), 'OBJECT', 'post');
-    
-    if ($post) {
+    global $wpdb;
+    $posts = $wpdb->get_results( $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_title = %s", $postContent->metadata->getTitle()));
+
+    foreach ($posts as $post) {
         if (empty(array_filter(get_the_category($post->{'ID'}), function ($v, $k) {
             return $v->{'name'} == 'managed';
         }, ARRAY_FILTER_USE_BOTH))) {
             $postData = array(
                 'ID' => $post->{'ID'},
                 'post_title'   => $postContent->metadata->getTitle(),
-                'post_content' => $postContent->getHtml(),
+                'post_content' => $postContent->getHtml()
             );
             wp_update_post( $postData );
         }
-    } else {
-        wp_insert_post(array(
+    }
+
+    if (empty($posts)) {
+        $post_id_pl = wp_insert_post(array(
             'post_content' => $postContent->getHtml(),
             'post_title' => $postContent->metadata->getTitle()
         ));
+        pl_set_post_language($post_id_pl, 'pl');
+        $post_id_en = wp_insert_post(array(
+            'post_content' => $postContent->getHtml(),
+            'post_title' => $postContent->metadata->getTitle()
+        ));
+        pl_set_post_language($post_id_en, 'en');
+        pll_save_post_translations(array('pl' => $post_id_pl, 'en' => $post_id_en));
     }
     
 }
@@ -56,13 +67,20 @@ function get_post_content($url, $token_id) {
     }
     $decoded = base64_decode($content -> {'content'});
     list($metadata, $body) = FrontMatterParser::parse($decoded);
-    $postContent = new PostContent($body, $metadata);
+
+    if ($metadata && $body) {
+        $postContent = new PostContent($body, $metadata);
     
-    echo "Downloaded " . $postContent->metadata->getTitle();
-    insert_or_update($postContent);
+        echo "Downloaded " . $postContent->metadata->getTitle();
+        insert_or_update($postContent);
+    }
 }
 
 add_action( 'admin_menu', 'ghposts_menu' );
+
+add_action('init', function() {
+    register_polylang_strings();
+});
 
 function ghposts_menu() {
 	add_options_page( 'GH Posts', 'GH Posts', 'manage_options', 'ghposts', 'ghposts_options' );
@@ -71,6 +89,7 @@ function ghposts_menu() {
 function ghposts_options() {
     echo '<div class="wrap">';
     echo '<h2>GH Posts</h2>';
+
     create_token_table();
 
     display_admin_save_token();
