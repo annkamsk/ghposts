@@ -29,33 +29,38 @@ function get_request($url, $token_id) {
 
 function insert_or_update($postContent) {
     global $wpdb;
-    $posts = $wpdb->get_results( $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_title = %s", $postContent->metadata->getTitle()));
+    $posts = $wpdb->get_results( $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_title = %s AND post_status IN ('publish', 'draft')", $postContent->metadata->getTitle()));
 
     foreach ($posts as $post) {
         if (empty(array_filter(get_the_category($post->{'ID'}), function ($v, $k) {
             return $v->{'name'} == 'managed';
         }, ARRAY_FILTER_USE_BOTH))) {
+            $lang = pl_get_post_language($post->{'ID'});
             $postData = array(
                 'ID' => $post->{'ID'},
                 'post_title'   => $postContent->metadata->getTitle(),
-                'post_content' => $postContent->getHtml()
+                'post_content' => $postContent->getHtml($lang)
             );
             wp_update_post( $postData );
+            echo "Updated " . $postContent->metadata->getTitle();
+
         }
     }
 
     if (empty($posts)) {
         $post_id_pl = wp_insert_post(array(
-            'post_content' => $postContent->getHtml(),
+            'post_content' => $postContent->getHtml("pl"),
             'post_title' => $postContent->metadata->getTitle()
         ));
         pl_set_post_language($post_id_pl, 'pl');
         $post_id_en = wp_insert_post(array(
-            'post_content' => $postContent->getHtml(),
+            'post_content' => $postContent->getHtml("en"),
             'post_title' => $postContent->metadata->getTitle()
         ));
         pl_set_post_language($post_id_en, 'en');
         pll_save_post_translations(array('pl' => $post_id_pl, 'en' => $post_id_en));
+        echo "Created " . $postContent->metadata->getTitle();
+
     }
     
 }
@@ -71,7 +76,6 @@ function get_post_content($url, $token_id) {
     if ($metadata && $body) {
         $postContent = new PostContent($body, $metadata);
     
-        echo "Downloaded " . $postContent->metadata->getTitle();
         insert_or_update($postContent);
     }
 }
@@ -106,9 +110,13 @@ function ghposts_options() {
         $body = get_request($token_obj->url, $token_id);   
         if ($body) {
             $tree = $body->{'tree'};
+            
             foreach ($tree as $key => $file) {
-                get_post_content($file->{'url'}, $token_id);
+                if (str_starts_with($file->{'path'}, 'yaml/')) {
+                    get_post_content($file->{'url'}, $token_id);
+                }
             }
+            
         }
     }
     echo '</div>';

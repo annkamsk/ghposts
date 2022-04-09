@@ -14,14 +14,14 @@ class PostMetadata {
         $this->target_lang = $data["target_lang"] ?? "";
     }
 
-    public function toHtml() {
+    public function toHtml($lang = "pl") {
         return "
             <!-- wp:paragraph -->
             <p>
-                <em>".pl__("From").": $this->from</em><br>
-                <em>".pl__("Original title").": $this->orig_title</em><br>
-                <em>".pl__("Lyrics by").": $this->lyrics_by</em><br>
-                <em>".pl__("Translated by").": $this->translate_by</em><br>
+                <em>".pll_translate_string("From", $lang).": $this->from</em><br>
+                <em>".pll_translate_string("Original title", $lang).": $this->orig_title</em><br>
+                <em>".pll_translate_string("Lyrics by", $lang).": $this->lyrics_by</em><br>
+                <em>".pll_translate_string("Translated by", $lang).": $this->translate_by</em><br>
             </p>
             <!-- /wp:paragraph -->
         ";
@@ -39,11 +39,16 @@ class PostContent {
 
     private $character_rgx = '/##### (.+)/';
 
-    public function __construct(string $raw_text, PostMetadata $metadata) {
-        $this->content = array();
-        $this->lines = explode("\n", $raw_text);
+    public function __construct(array $content, PostMetadata $metadata) {
         $this->metadata = $metadata;
-        $this->parse();
+        $raw_text = $content["target"];
+        $this->target = $this->parse(explode("\n", $raw_text));
+
+        $this->source = array();
+
+        if (array_key_exists("source", $content)) {
+            $this->source = $this->parse(explode("\n", $content["source"]));
+        }
     }
 
     function find_character($line) {
@@ -55,14 +60,15 @@ class PostContent {
         return '';
     }
 
-    function parse() {
+    function parse(array $lines) {
         $verse = array();
+        $content = array();
 
-        foreach ($this->lines as $line) {
+        foreach ($lines as $line) {
             $character = $this->find_character($line);
             if ($character) {
                 if (!empty($verse)) {
-                    array_push($this->content, $verse);
+                    array_push($content, $verse);
                     $verse = array();
                 }
                 array_push($verse, $character);
@@ -70,7 +76,7 @@ class PostContent {
             }
             if (strlen(trim($line)) == 0) {
                 if (!empty($verse)) {
-                    array_push($this->content, $verse);
+                    array_push($content, $verse);
                     $verse = array();
                 }
                 continue;
@@ -78,24 +84,30 @@ class PostContent {
             array_push($verse, $line);
         }
         if (!empty($verse)) {
-            array_push($this->content, $verse);
+            array_push($content, $verse);
         }
+        return $content;
     }
 
-    public function getHtml() {
-        $metadataHtml = $this->metadata->toHtml();
-        $column = "";
-        foreach ($this->content as $el) {
-            $column .= "<!-- wp:paragraph --><p>" . implode("<br>", $el) . "</p><!-- /wp:paragraph -->";
+    public function getHtml($lang = "pl") {
+        $metadataHtml = $this->metadata->toHtml($lang);
+        $column1 = "";
+        foreach ($this->target as $el) {
+            $column1 .= "<!-- wp:paragraph --><p>" . implode("<br>", $el) . "</p><!-- /wp:paragraph -->";
+        }
+        $column2 = "";
+        foreach ($this->source as $el) {
+            $column2 .= "<!-- wp:paragraph --><p>" . implode("<br>", $el) . "</p><!-- /wp:paragraph -->";
         }
         $html = "
             <!-- wp:column -->
                 <div class=\"wp-block-column\">
-                $column
+                $column1
                 </div>
             <!-- /wp:column -->
             <!-- wp:column -->
                 <div class=\"wp-block-column\">
+                $column2
                 </div>
             <!-- /wp:column -->
         ";

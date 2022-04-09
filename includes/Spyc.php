@@ -502,7 +502,7 @@ class Spyc {
   private function loadWithSource($Source) {
     if (empty ($Source)) return array();
     if ($this->setting_use_syck_is_possible && function_exists ('syck_load')) {
-      $array = syck_load (implode ("\n", $Source));
+      $array = syck_load(implode ("\n", $Source));
       return is_array($array) ? $array : array();
     }
 
@@ -525,7 +525,7 @@ class Spyc {
         $line = rtrim ($line, $literalBlockStyle . " \n");
         $literalBlock = '';
         $line .= ' '.$this->LiteralPlaceHolder;
-        $literal_block_indent = strlen($Source[$i+1]) - strlen(ltrim($Source[$i+1]));
+        $literal_block_indent = strlen($Source[$i]) - strlen(ltrim($Source[$i]));
         while (++$i < $cnt && $this->literalBlockContinues($Source[$i], $this->indent)) {
           $literalBlock = $this->addLiteralLine($literalBlock, $Source[$i], $literalBlockStyle, $literal_block_indent);
         }

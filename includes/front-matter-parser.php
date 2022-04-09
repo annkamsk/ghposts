@@ -11,7 +11,8 @@ class FrontMatterParser {
             return null;
         }
         $matter = Spyc::YAMLLoad(trim($parts[1]));
-        return [new PostMetadata($matter), $parts[2]];
+        $body = Spyc::YAMLLoad(trim($parts[2]));
+        return [new PostMetadata($matter), $body];
     }
 }
 
