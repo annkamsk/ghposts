@@ -32,19 +32,19 @@ function insert_or_update($postContent) {
     $posts = $wpdb->get_results( $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_title = %s AND post_status IN ('publish', 'draft')", $postContent->metadata->getTitle()));
 
     foreach ($posts as $post) {
-        if (empty(array_filter(get_the_category($post->{'ID'}), function ($v, $k) {
-            return $v->{'name'} == 'managed';
-        }, ARRAY_FILTER_USE_BOTH))) {
-            $lang = pl_get_post_language($post->{'ID'});
-            $postData = array(
-                'ID' => $post->{'ID'},
-                'post_title'   => $postContent->metadata->getTitle(),
-                'post_content' => $postContent->getHtml($lang)
-            );
-            wp_update_post( $postData );
-            echo "Updated " . $postContent->metadata->getTitle();
+        // if (empty(array_filter(get_the_category($post->{'ID'}), function ($v, $k) {
+        //     return $v->{'name'} == 'managed';
+        // }, ARRAY_FILTER_USE_BOTH))) {
+        $lang = pl_get_post_language($post->{'ID'});
+        $postData = array(
+            'ID' => $post->{'ID'},
+            'post_title'   => $postContent->metadata->getTitle(),
+            'post_content' => $postContent->getHtml($lang)
+        );
+        wp_update_post( $postData );
+        echo "Updated " . $postContent->metadata->getTitle();
 
-        }
+        // }
     }
 
     if (empty($posts)) {

@@ -6,9 +6,9 @@ function register_polylang_strings() {
         pll_register_string("ghposts_origtitle", "Original title");
         pll_register_string("ghposts_lyricsby", "Lyrics by");
         pll_register_string("ghposts_translateby", "Translated by");
-        pll_register_string("ghposts_pl", "Polish");
-        pll_register_string("ghposts_eng", "English");
-        pll_register_string("ghposts_de", "German");
+        pll_register_string("ghposts_pl", "pl");
+        pll_register_string("ghposts_eng", "en");
+        pll_register_string("ghposts_de", "de");
     }
 }
 
@@ -31,6 +31,13 @@ function pl_get_post_language($post_id) {
         return pll_get_post_language($post_id);
     }
     return null;
+}
+
+function pl_translate_string($string, $lang) {
+    if (function_exists('pll_translate_string')) {
+        return pll_translate_string($string, $lang);
+    }
+    return $string;
 }
 
 ?>

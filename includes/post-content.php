@@ -18,10 +18,10 @@ class PostMetadata {
         return "
             <!-- wp:paragraph -->
             <p>
-                <em>".pll_translate_string("From", $lang).": $this->from</em><br>
-                <em>".pll_translate_string("Original title", $lang).": $this->orig_title</em><br>
-                <em>".pll_translate_string("Lyrics by", $lang).": $this->lyrics_by</em><br>
-                <em>".pll_translate_string("Translated by", $lang).": $this->translate_by</em><br>
+                <em>".pl_translate_string("From", $lang).": $this->from</em><br>
+                <em>".pl_translate_string("Original title", $lang).": $this->orig_title</em><br>
+                <em>".pl_translate_string("Lyrics by", $lang).": $this->lyrics_by</em><br>
+                <em>".pl_translate_string("Translated by", $lang).": $this->translate_by</em><br>
             </p>
             <!-- /wp:paragraph -->
         ";
@@ -102,11 +102,17 @@ class PostContent {
         $html = "
             <!-- wp:column -->
                 <div class=\"wp-block-column\">
+                <h4 class=\"lang_header\">" . 
+                    pl_translate_string($this->metadata->source_lang, $lang) .
+                "</h4>
                 $column1
                 </div>
             <!-- /wp:column -->
             <!-- wp:column -->
                 <div class=\"wp-block-column\">
+                <h4 class=\"lang_header\">" .
+                pl_translate_string($this->metadata->target_lang, $lang) .
+                "</h4>
                 $column2
                 </div>
             <!-- /wp:column -->
