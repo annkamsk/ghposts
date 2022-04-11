@@ -32,7 +32,6 @@ class PostMetadata {
 
     public function getCategories() {
         $categories = array($this->from, $this->target_lang == 'en' ? 'English' : 'Polskie');
-        var_dump($categories);
         return $categories;
     }
 
