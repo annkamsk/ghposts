@@ -12,7 +12,15 @@ function insert_or_update($postContent) {
         insert_post($postContent);
         return;
     }
-
+    if (count($posts) == 1) {
+        update_post($posts[0], $postContent);
+        $lang = pl_get_post_language($posts[0]->{'ID'});
+        $missing_lang = $lang == "pl" ? "en" : "pl";
+        $post_id = insert_language_version($postContent, $missing_lang);
+        echo $post_id;
+        pll_save_post_translations(array($lang => $posts[0]->{'ID'}, $missing_lang => $post_id));
+        return;
+    }
     foreach ($posts as $post) {
         update_post($post, $postContent);
     }
