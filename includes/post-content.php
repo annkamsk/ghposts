@@ -9,9 +9,31 @@ class PostMetadata {
         $this->from = $data["from"] ?? "";
         $this->orig_title = $data["orig_title"] ?? "";
         $this->lyrics_by = $data["lyrics_by"] ?? "";
-        $this->translate_by = $data["translate_by"] ?? "";
+        $this->translated_by = $data["translated_by"] ?? "";
         $this->source_lang = $data["source_lang"] ?? "";
         $this->target_lang = $data["target_lang"] ?? "";
+        $this->categories = $data["categories"] ?? array();
+    }
+
+    function tagify(string $string) {
+        // remove punctuation
+        return preg_replace('/\p{P}/', '', $string);
+    }
+
+    public function getTags() {
+        $tags = array($this->tagify($this->from));
+        if ($this->target_lang == 'pl') {
+            array_push($tags, $this->tagify($this->from) . " po polsku");
+        } elseif ($this->target_lang == 'en') {
+            array_push($tags, $this->tagify($this->from) . " in english");
+        }
+        return $tags;
+    }
+
+    public function getCategories() {
+        $categories = array($this->from, $this->target_lang == 'en' ? 'English' : 'Polskie');
+        var_dump($categories);
+        return $categories;
     }
 
     public function toHtml($lang = "pl") {
@@ -21,7 +43,7 @@ class PostMetadata {
                 <em>".pl_translate_string("From", $lang).": $this->from</em><br>
                 <em>".pl_translate_string("Original title", $lang).": $this->orig_title</em><br>
                 <em>".pl_translate_string("Lyrics by", $lang).": $this->lyrics_by</em><br>
-                <em>".pl_translate_string("Translated by", $lang).": $this->translate_by</em><br>
+                <em>".pl_translate_string("Translated by", $lang).": $this->translated_by</em><br>
             </p>
             <!-- /wp:paragraph -->
         ";
@@ -102,17 +124,21 @@ class PostContent {
         $html = "
             <!-- wp:column -->
                 <div class=\"wp-block-column\">
-                <h4 class=\"lang_header\">" . 
-                    pl_translate_string($this->metadata->source_lang, $lang) .
-                "</h4>
+                <!-- wp:heading {\"level\":4,\"className\":\"lang_header\"} -->
+                    <h4 class=\"lang_header\">" . 
+                        pl_translate_string($this->metadata->target_lang, $lang) .
+                    "</h4>
+                <!-- /wp:heading -->
                 $column1
                 </div>
             <!-- /wp:column -->
             <!-- wp:column -->
                 <div class=\"wp-block-column\">
-                <h4 class=\"lang_header\">" .
-                pl_translate_string($this->metadata->target_lang, $lang) .
-                "</h4>
+                <!-- wp:heading {\"level\":4,\"className\":\"lang_header\"} -->
+                    <h4 class=\"lang_header\">" .
+                    pl_translate_string($this->metadata->source_lang, $lang) .
+                    "</h4>
+                <!-- /wp:heading -->
                 $column2
                 </div>
             <!-- /wp:column -->
