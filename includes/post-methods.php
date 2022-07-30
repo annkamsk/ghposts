@@ -2,7 +2,7 @@
 
 require_once( __DIR__ . '/languages.php');
 require_once( __DIR__ . '/requests.php');
-
+require_once( __DIR__ . '/utils.php' );
 
 function insert_or_update($postContent) {
     global $wpdb;
@@ -17,7 +17,6 @@ function insert_or_update($postContent) {
         $lang = pl_get_post_language($posts[0]->{'ID'});
         $missing_lang = $lang == "pl" ? "en" : "pl";
         $post_id = insert_language_version($postContent, $missing_lang);
-        echo $post_id;
         pll_save_post_translations(array($lang => $posts[0]->{'ID'}, $missing_lang => $post_id));
         return;
     }
@@ -31,7 +30,7 @@ function insert_post($postContent) {
     $post_id_en = insert_language_version($postContent, "en");
     
     pll_save_post_translations(array("pl" => $post_id_pl, "en" => $post_id_en));
-    echo "Created " . $postContent->metadata->getTitle();
+    info("Created " . $postContent->metadata->getTitle());
 }
 
 function insert_language_version($postContent, $lang) {
@@ -45,10 +44,24 @@ function insert_language_version($postContent, $lang) {
     return $post_id;
 }
 
+function is_post_managed($post) {
+    $tags = get_the_tags($post->{'ID'});
+    if (!$tags) {
+        // either no tags or post doesn't exist
+        return false;
+    }
+    $f = function($WP_term): string {
+        return $WP_term->{'name'};
+    };
+    $tags_str = array_map($f, $tags);
+    return in_array('managed', $tags_str);
+}
+
 function update_post($post, $postContent) {
-    // if (empty(array_filter(get_the_category($post->{'ID'}), function ($v, $k) {
-    //     return $v->{'name'} == 'managed';
-    // }, ARRAY_FILTER_USE_BOTH))) {
+    if (is_post_managed($post)) {
+        info("Skipped " . $postContent->metadata->getTitle());
+        return;
+    }
     $lang = pl_get_post_language($post->{'ID'});
     $postData = array(
         'ID' => $post->{'ID'},
@@ -58,8 +71,7 @@ function update_post($post, $postContent) {
     wp_update_post( $postData );
     wp_set_post_tags($post->{'ID'}, $postContent->metadata->getTags(), true);
     set_post_categories($post->{'ID'}, $postContent->metadata->getCategories());
-    echo "Updated " . $postContent->metadata->getTitle();
-        // }
+    info("Updated " . $postContent->metadata->getTitle());
 }
 
 function get_post_content($url, $token_id) {
@@ -87,6 +99,6 @@ function set_post_categories($post_id, $categories) {
         }
         array_push($wp_categories, $id);
     }
-    wp_set_post_categories($post_id, $wp_categories, true);
+    wp_set_post_categories($post_id, $wp_categories, false);
 }
 ?>

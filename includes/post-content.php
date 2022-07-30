@@ -31,7 +31,7 @@ class PostMetadata {
     }
 
     public function getCategories() {
-        $categories = array($this->from, $this->target_lang == 'en' ? 'English' : 'Polskie');
+        $categories = array_merge($this->categories, array($this->from, $this->target_lang == 'en' ? 'English' : 'Polskie'));
         return $categories;
     }
 
